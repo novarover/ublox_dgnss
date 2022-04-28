@@ -193,7 +193,9 @@ public:
       node_name + "/reset_odo", std::bind(&UbloxDGNSSNode::reset_odo_callback, this, _1, _2));
 
     try {
-      usbc_ = std::make_shared<usb::Connection>(F9P_VENDOR_ID, F9P_PRODUCT_ID);
+      // Last parameter is log level
+      // LIBUSB_LOG_LEVEL_NONE = 0, LIBUSB_LOG_LEVEL_ERROR = 1, LIBUSB_LOG_LEVEL_WARNING = 2, LIBUSB_LOG_LEVEL_INFO = 3, LIBUSB_LOG_LEVEL_DEBUG = 4
+      usbc_ = std::make_shared<usb::Connection>(F9P_VENDOR_ID, F9P_PRODUCT_ID, 2);
       usbc_->set_in_callback(connection_in_callback);
       usbc_->set_out_callback(connection_out_callback);
       usbc_->set_exception_callback(connection_exception_callback);

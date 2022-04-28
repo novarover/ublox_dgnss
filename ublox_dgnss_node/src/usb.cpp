@@ -190,9 +190,10 @@ char * Connection::device_speed_txt()
     case LIBUSB_SPEED_SUPER:
       speed_txt = const_cast<char *>("SPEED_SUPER (5000 MBit/s)");
       break;
-    case LIBUSB_SPEED_SUPER_PLUS:
-      speed_txt = const_cast<char *>("SPEED_SUPER_PLUS (10000 MBit/s)");
-      break;
+    // Idk what SUPER_PLUS is, but it's not available on this system.
+    // case LIBUSB_SPEED_SUPER_PLUS:
+    // speed_txt = const_cast<char *>("SPEED_SUPER_PLUS (10000 MBit/s)");
+    // break;
     default:
       speed_txt = const_cast<char *>("SPEED_UNKNOWN");
       break;

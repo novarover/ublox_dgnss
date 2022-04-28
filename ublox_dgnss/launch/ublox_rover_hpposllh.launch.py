@@ -2,6 +2,7 @@
 import launch
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.actions import LoadComposableNodes
+from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode
 
 def generate_launch_description():
@@ -13,15 +14,15 @@ def generate_launch_description():
             {'CFG_MSGOUT_UBX_NAV_STATUS_USB': 5}]
 
   container1 = ComposableNodeContainer(
-    name='ublox_dgnss_container',
-    namespace='',
+    node_name='ublox_dgnss_container',
+    node_namespace='',
     package='rclcpp_components',
-    executable='component_container',
+    node_executable='component_container',
     composable_node_descriptions=[
       ComposableNode(
         package='ublox_dgnss_node',
-        plugin='ublox_dgnss::UbloxDGNSSNode',
-        name='ublox_dgnss',
+        node_plugin='ublox_dgnss::UbloxDGNSSNode',
+        node_name='ublox_dgnss',
         parameters=params
       )
     ]

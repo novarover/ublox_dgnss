@@ -136,7 +136,7 @@ public:
   void init();  // throws exception on failure
   void open_device();  // throws exception on failure
   void init_async();  // throws exception on failure
-  Connection(int vendor_id, int product_id, int log_level = LIBUSB_OPTION_LOG_LEVEL);
+  Connection(int vendor_id, int product_id, int log_level);
   ~Connection();
   void set_in_callback(connection_in_cb_fn in_cb_fn) {in_cb_fn_ = in_cb_fn;}
   void set_out_callback(connection_out_cb_fn out_cb_fn) {out_cb_fn_ = out_cb_fn;}
