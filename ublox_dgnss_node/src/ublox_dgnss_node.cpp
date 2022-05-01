@@ -66,10 +66,22 @@ namespace ublox_dgnss
     frame_in, // in from the gps device
     frame_out // out to the gps device
   };
+  
   struct ubx_queue_frame_t
   {
     rclcpp::Time ts;
     std::shared_ptr<ubx::Frame> ubx_frame;
+    FrameType frame_type;
+  };
+
+  struct rtcm_3_frame_t
+  {
+    bool has_preamble;
+    bool has_dlc;
+    bool has_data;
+    bool has_parity;
+    uint16_t buf_len;
+    std::vector<uint8_t> buf;
     FrameType frame_type;
   };
 
@@ -233,6 +245,13 @@ namespace ublox_dgnss
       ubx_queue_.clear();
       ubx_timer_ = create_wall_timer(10ns, std::bind(&UbloxDGNSSNode::ubx_timer_callback, this));
 
+      // Setup RTCM raw messages
+      rtcm_3_frame_t rtcm_msg_partial_{}; 
+
+      rtcm_queue_.clear();
+      rtcm_timer_ = create_wall_timer(10ns, std::bind(&UbloxDGNSSNode::rtcm_timer_callback, this));
+
+
       ubx_cfg_ = std::make_shared<ubx::cfg::UbxCfg>(usbc_);
       ubx_cfg_->cfg_val_set_cfgdata_clear();
       ubx_cfg_->cfg_val_set_layer_ram(true);
@@ -310,7 +329,16 @@ namespace ublox_dgnss
     std::deque<ubx_queue_frame_t> ubx_queue_;
     std::mutex ubx_queue_mutex_;
 
+    // This frame contains the partially decoded message
+    rtcm_3_frame_t rtcm_msg_partial_;
+
+    // queue of partial RTCM message frames
+    std::deque<rtcm_3_frame_t> rtcm_queue_;
+    std::mutex rtcm_queue_mutex_;
+
+
     rclcpp::TimerBase::SharedPtr ubx_timer_;
+    rclcpp::TimerBase::SharedPtr rtcm_timer_;
 
     bool async_initialised_;
 
@@ -820,9 +848,19 @@ namespace ublox_dgnss
               |<-- 8 --->|<- 6 -->|<-- 10 --->|<--- length x 8 --->|<-- 24 -->|
               +----------+--------+-----------+--------------------+----------+
             */
-            if (buf[0] == 0xD3)
+            // Check for current rtcm decoding
+            if (rtcm_msg_partial_.has_preamble)
             {
-              RCLCPP_DEBUG(get_logger(), "RTCM3.3 preamble byte found");
+
+            }else{
+              if (buf[0] == 0xD3)
+              {
+                RCLCPP_DEBUG(get_logger(), "RTCM3.3 preamble byte found");
+                rtcm_msg_partial_.buf.clear();
+                rtcm_msg_partial_.buf.reserve(1023+6);
+                rtcm_msg_partial_.buf.push_back(0xD3);
+                rtcm_msg_partial_.has_preamble = true;
+              } 
             }
           }
 
@@ -950,6 +988,12 @@ namespace ublox_dgnss
     // }
 
   private:
+    UBLOX_DGNSS_NODE_LOCAL
+    void rtcm_timer_callback()
+    {
+      // Check for rtcm in/out frames. These are collections of raw bytes.
+    }
+
     UBLOX_DGNSS_NODE_LOCAL
     void ubx_timer_callback()
     {
