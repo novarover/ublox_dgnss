@@ -8,13 +8,11 @@ from launch_ros.descriptions import ComposableNode
 def generate_launch_description():
   """Generate launch description for ublox_dgnss components."""
   params = [{'CFG_USBOUTPROT_NMEA': False},
-            {'CFG_RATE_MEAS': 100},
-            {'CFG_RATE_NAV': 1},
             {'CFG_MSGOUT_UBX_NAV_HPPOSLLH_USB': 1},
             {'CFG_MSGOUT_UBX_NAV_STATUS_USB': 5}]
 
   container1 = ComposableNodeContainer(
-    node_name='ublox_dgnss_container',
+    node_name='gps_base_container',
     node_namespace='',
     package='rclcpp_components',
     node_executable='component_container',
@@ -22,7 +20,7 @@ def generate_launch_description():
       ComposableNode(
         package='ublox_dgnss_node',
         node_plugin='ublox_dgnss::UbloxDGNSSNode',
-        node_name='ublox_dgnss',
+        node_name='gps_base',
         parameters=params
       )
     ]
