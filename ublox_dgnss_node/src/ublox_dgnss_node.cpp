@@ -48,6 +48,7 @@
 #include "ublox_ubx_msgs/msg/ubx_nav_vel_ecef.hpp"
 #include "ublox_ubx_msgs/msg/ubx_nav_vel_ned.hpp"
 #include "ublox_ubx_msgs/msg/ubx_rxm_rtcm.hpp"
+#include "ublox_ubx_msgs/msg/rtcm3.hpp"
 #include "ublox_ubx_interfaces/srv/hot_start.hpp"
 #include "ublox_ubx_interfaces/srv/warm_start.hpp"
 #include "ublox_ubx_interfaces/srv/cold_start.hpp"
@@ -76,11 +77,6 @@ namespace ublox_dgnss
 
   struct rtcm_3_frame_t
   {
-    bool has_preamble;
-    bool has_dlc;
-    bool has_data;
-    bool has_parity;
-    uint16_t buf_len;
     std::vector<uint8_t> buf;
     FrameType frame_type;
   };
@@ -186,6 +182,7 @@ namespace ublox_dgnss
           node_name + "/ubx_nav_vel_ned", qos);
 
       ubx_rxm_rtcm_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>(node_name + "/ubx_rxm_rtcm", qos);
+      rtcm_out_pub_ = this->create_publisher<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_out", qos);
 
       // ros2 parameter call backs
       parameters_callback_handle_ =
@@ -244,9 +241,6 @@ namespace ublox_dgnss
 
       ubx_queue_.clear();
       ubx_timer_ = create_wall_timer(10ns, std::bind(&UbloxDGNSSNode::ubx_timer_callback, this));
-
-      // Setup RTCM raw messages
-      rtcm_3_frame_t rtcm_msg_partial_{}; 
 
       rtcm_queue_.clear();
       rtcm_timer_ = create_wall_timer(10ns, std::bind(&UbloxDGNSSNode::rtcm_timer_callback, this));
@@ -329,10 +323,7 @@ namespace ublox_dgnss
     std::deque<ubx_queue_frame_t> ubx_queue_;
     std::mutex ubx_queue_mutex_;
 
-    // This frame contains the partially decoded message
-    rtcm_3_frame_t rtcm_msg_partial_;
-
-    // queue of partial RTCM message frames
+    // queue of RTCM message frames
     std::deque<rtcm_3_frame_t> rtcm_queue_;
     std::mutex rtcm_queue_mutex_;
 
@@ -361,7 +352,12 @@ namespace ublox_dgnss
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavTimeUTC>::SharedPtr ubx_nav_time_utc_pub_;
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavVelECEF>::SharedPtr ubx_nav_vel_ecef_pub_;
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavVelNED>::SharedPtr ubx_nav_vel_ned_pub_;
+    
+    // UBX-RXM types
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>::SharedPtr ubx_rxm_rtcm_pub_;
+
+    // RAW RTCM3 TOPIC
+    rclcpp::Publisher<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_out_pub_;
 
     rclcpp::Service<ublox_ubx_interfaces::srv::HotStart>::SharedPtr hot_start_service_;
     rclcpp::Service<ublox_ubx_interfaces::srv::WarmStart>::SharedPtr warm_start_service_;
@@ -848,20 +844,28 @@ namespace ublox_dgnss
               |<-- 8 --->|<- 6 -->|<-- 10 --->|<--- length x 8 --->|<-- 24 -->|
               +----------+--------+-----------+--------------------+----------+
             */
-            // Check for current rtcm decoding
-            if (rtcm_msg_partial_.has_preamble)
+            
+            // RTCM messages are given to use in their complete form, so we dont need to maintain any global state
+            // as to a partial RTCM deserialisation! Nice!
+            // RTCM preamble starts with a 0xD3 for RTCM version 3 
+            if (buf[0] == 0xD3)
             {
+              RCLCPP_DEBUG(get_logger(), "RTCM3.3 preamble byte found!");
 
-            }else{
-              if (buf[0] == 0xD3)
+              // Build up a frame
+              rtcm_3_frame_t queue_frame{};
+              queue_frame.frame_type = FrameType::frame_in;
+              queue_frame.buf.reserve(len);
+              queue_frame.buf.resize(len);
+              memcpy(queue_frame.buf.data(), &buf[0], len);
+
               {
-                RCLCPP_DEBUG(get_logger(), "RTCM3.3 preamble byte found");
-                rtcm_msg_partial_.buf.clear();
-                rtcm_msg_partial_.buf.reserve(1023+6);
-                rtcm_msg_partial_.buf.push_back(0xD3);
-                rtcm_msg_partial_.has_preamble = true;
-              } 
-            }
+                const std::lock_guard<std::mutex> lock(rtcm_queue_mutex_);
+                rtcm_queue_.push_back(queue_frame);
+                RCLCPP_DEBUG(get_logger(), "RTCM3 frame pushed to inbound queue");
+              }
+            } 
+            
           }
 
           std::ostringstream os;
@@ -1033,7 +1037,16 @@ namespace ublox_dgnss
     UBLOX_DGNSS_NODE_LOCAL
     void rtcm_queue_frame_in(rtcm_3_frame_t *rf)
     {
-      RCLCPP_DEBUG(get_logger(), "rtcm_queue_frame_in");
+      RCLCPP_DEBUG(get_logger(), "rtcm_queue_frame_in publishing frame!");
+
+      auto msg = std::make_unique<ublox_ubx_msgs::msg::RTCM3>();
+      rclcpp::Time ts = rclcpp::Clock().now();
+      msg->header.frame_id = frame_id_;
+      msg->header.stamp = ts;
+      msg->data = rf->buf;
+      // memcpy(&msg->data[0],rf->buf.data(),rf->buf.size());
+      // msg->data = rf->version;
+      rtcm_out_pub_->publish(*msg);
     }
 
     UBLOX_DGNSS_NODE_LOCAL
