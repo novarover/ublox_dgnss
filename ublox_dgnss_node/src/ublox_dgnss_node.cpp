@@ -992,6 +992,48 @@ namespace ublox_dgnss
     void rtcm_timer_callback()
     {
       // Check for rtcm in/out frames. These are collections of raw bytes.
+      if (rtcm_queue_.size() == 0)
+      {
+        return;
+      }
+
+      while (rtcm_queue_.size() > 0)
+      {
+        try
+        {
+          // Grab frame from queue
+          rtcm_3_frame_t rf = rtcm_queue_[0];
+          // Is this frame going in or out? With respec to the ros node.
+          switch(rf.frame_type)
+          {
+            case FrameType::frame_in:
+              // frame_in -> turn this frame into a ROS message and transmit it
+              rtcm_queue_frame_in(&rf);
+              break;
+            case FrameType::frame_out:
+              // frame_out -> write this frame to the attached GPS device on USB
+              break;
+            default:
+              RCLCPP_ERROR(get_logger(), "Unknown rtcm_queue frame_type: %d - doing nothing", rf.frame_type);
+          }
+        }
+        catch (const std::exception &e)
+        {
+          RCLCPP_ERROR(get_logger(), "rtcm_queue exception: %s", e.what());
+        }
+
+        // Grab the mutex, and remove this frame from the queue, since we have just processed it.
+        {
+          const std::lock_guard<std::mutex> lock(rtcm_queue_mutex_);
+          rtcm_queue_.pop_front();
+        }
+      }
+    }
+
+    UBLOX_DGNSS_NODE_LOCAL
+    void rtcm_queue_frame_in(rtcm_3_frame_t *rf)
+    {
+      RCLCPP_DEBUG(get_logger(), "rtcm_queue_frame_in");
     }
 
     UBLOX_DGNSS_NODE_LOCAL
