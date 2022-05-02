@@ -1,7 +1,11 @@
 # ublox-dgnss
-This usb based driver is focused on UBLOX Generation 9 UBX messaging, for a rover for DGNSS. Its assumed that RTCM messages are being delivered externally. High precision data is available.
+This usb based driver is focused on UBLOX Generation 9 UBX messaging, for base-rover DGNSS.
+This fork provides a rudimentary **ROS-topic-based RTCM message transfer** from Base -> Rover.
+Only a single USB port connection is required, with UBX and RTCM messages being transferred across it. 
+Ensure that your base/rover unit has the correct configuration to send/receive RTCM3 messages on the USB port, before trying this out.
 
-It will only work with later generation ublox devices. Testing and development was performed against a ZED-F9P connected via USB, under Ubuntu 20.04. The driver uses libusb api 1.0.
+Testing and development was performed against a ZED-F9P connected via USB, under Ubuntu 20.04 and Ubuntu 18.04. The driver uses libusb api 1.0.
+**ROS2 Eloquent** is the target version for this repository. ROS2 Foxy is supported by making small changes to the launch file (remove the 'node_' prefixes).
 
 You may need to create a udev rule as follows:
 

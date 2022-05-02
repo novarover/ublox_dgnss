@@ -183,6 +183,7 @@ namespace ublox_dgnss
 
       ubx_rxm_rtcm_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>(node_name + "/ubx_rxm_rtcm", qos);
       rtcm_out_pub_ = this->create_publisher<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_out", qos);
+      rtcm_in_sub_ = this->create_subscription<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_in", qos, std::bind(&UbloxDGNSSNode::rtcm_in_callback, this, _1));
 
       // ros2 parameter call backs
       parameters_callback_handle_ =
@@ -356,8 +357,9 @@ namespace ublox_dgnss
     // UBX-RXM types
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>::SharedPtr ubx_rxm_rtcm_pub_;
 
-    // RAW RTCM3 TOPIC
+    // RAW RTCM3 TOPICS
     rclcpp::Publisher<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_out_pub_;
+    rclcpp::Subscription<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_in_sub_;
 
     rclcpp::Service<ublox_ubx_interfaces::srv::HotStart>::SharedPtr hot_start_service_;
     rclcpp::Service<ublox_ubx_interfaces::srv::WarmStart>::SharedPtr warm_start_service_;
@@ -914,6 +916,24 @@ namespace ublox_dgnss
         }
       }
 
+      // RTCM starts with 0xD3
+      if (len > 1 && buf[0] == 0xD3)
+      {
+        // This is RTCM data that has been sent! We add it to the queue here for logging purposes.
+
+        // Build up a frame
+        rtcm_3_frame_t queue_frame{};
+        queue_frame.frame_type = FrameType::frame_out;
+        queue_frame.buf.reserve(len);
+        queue_frame.buf.resize(len);
+        memcpy(queue_frame.buf.data(), &buf[0], len);
+        {
+          const std::lock_guard<std::mutex> lock(rtcm_queue_mutex_);
+          rtcm_queue_.push_back(queue_frame);
+          RCLCPP_DEBUG(get_logger(), "RTCM3 frame sent ROS -> GPS");
+        }
+      }
+
       std::ostringstream os;
       os << "0x";
       for (int i = 0; i < transfer_out->actual_length; i++)
@@ -1015,7 +1035,8 @@ namespace ublox_dgnss
               rtcm_queue_frame_in(&rf);
               break;
             case FrameType::frame_out:
-              // frame_out -> write this frame to the attached GPS device on USB
+              // frame_out -> a frame has been written to the USB via the rostopic callback 
+              rtcm_queue_frame_out(&rf);
               break;
             default:
               RCLCPP_ERROR(get_logger(), "Unknown rtcm_queue frame_type: %d - doing nothing", rf.frame_type);
@@ -1044,9 +1065,27 @@ namespace ublox_dgnss
       msg->header.frame_id = frame_id_;
       msg->header.stamp = ts;
       msg->data = rf->buf;
-      // memcpy(&msg->data[0],rf->buf.data(),rf->buf.size());
-      // msg->data = rf->version;
       rtcm_out_pub_->publish(*msg);
+    }
+
+    UBLOX_DGNSS_NODE_LOCAL
+    void rtcm_queue_frame_out(rtcm_3_frame_t *rf)
+    {
+      // For logging purposes we have this callback.
+      RCLCPP_INFO(get_logger(), "rtcm_queue_frame_out RTCM sent to GPS!");
+    }
+
+    UBLOX_DGNSS_NODE_LOCAL
+    void rtcm_in_callback(const ublox_ubx_msgs::msg::RTCM3::SharedPtr msg) const
+    {
+      RCLCPP_INFO(get_logger(), "RTCM3 received, sending out USB");
+      // Send it out to the USB port
+      if (usbc_ != nullptr)
+      {
+        usbc_->write_buffer_async(msg->data.data(),msg->data.size(),NULL);
+      }else{
+        RCLCPP_WARN(get_logger(), "RTCM3 received, but no USB connection was available to transfer it.");
+      }
     }
 
     UBLOX_DGNSS_NODE_LOCAL
