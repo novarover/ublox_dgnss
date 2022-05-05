@@ -10,8 +10,9 @@ def generate_launch_description():
   params = [{'CFG_USBOUTPROT_NMEA': False},
             {'CFG_MSGOUT_UBX_NAV_HPPOSLLH_USB': 1},
             {'CFG_MSGOUT_UBX_NAV_STATUS_USB': 5},
-            {'CFG_RATE_MEAS':100},
-            {'CFG_RATE_NAV':10}]
+            {'CFG_MSGOUT_UBX_NAV_RELPOSNED_USB':1},
+            {'CFG_RATE_MEAS':25},
+            {'CFG_RATE_NAV':4}]
             # ANY CONFIG APPLIED ABOVE IS TEMPORARY. 
             # CONFIG STORED IN FLASH IS STILL USED BY UBLOX CHIP.
             #{'CFG_RATE_MEAS': 100},
