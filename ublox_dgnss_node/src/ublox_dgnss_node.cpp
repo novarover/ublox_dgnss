@@ -47,6 +47,7 @@
 #include "ublox_ubx_msgs/msg/ubx_nav_time_utc.hpp"
 #include "ublox_ubx_msgs/msg/ubx_nav_vel_ecef.hpp"
 #include "ublox_ubx_msgs/msg/ubx_nav_vel_ned.hpp"
+#include "ublox_ubx_msgs/msg/ubx_nav_svin.hpp"
 #include "ublox_ubx_msgs/msg/ubx_rxm_rtcm.hpp"
 #include "ublox_ubx_msgs/msg/rtcm3.hpp"
 #include "ublox_ubx_interfaces/srv/hot_start.hpp"
@@ -180,6 +181,9 @@ namespace ublox_dgnss
           node_name + "/ubx_nav_vel_ecef", qos);
       ubx_nav_vel_ned_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXNavVelNED>(
           node_name + "/ubx_nav_vel_ned", qos);
+
+      ubx_nav_svin_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXNavSVIN>(
+          node_name + "/ubx_nav_svin", qos);
 
       ubx_rxm_rtcm_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>(node_name + "/ubx_rxm_rtcm", qos);
       rtcm_out_pub_ = this->create_publisher<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_out", qos);
@@ -353,6 +357,7 @@ namespace ublox_dgnss
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavTimeUTC>::SharedPtr ubx_nav_time_utc_pub_;
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavVelECEF>::SharedPtr ubx_nav_vel_ecef_pub_;
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavVelNED>::SharedPtr ubx_nav_vel_ned_pub_;
+    rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavSVIN>::SharedPtr ubx_nav_svin_pub_;
     
     // UBX-RXM types
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>::SharedPtr ubx_rxm_rtcm_pub_;
@@ -1629,6 +1634,45 @@ namespace ublox_dgnss
       msg->c_acc = payload->cAcc;
 
       ubx_nav_vel_ned_pub_->publish(*msg);
+    }
+    
+    UBLOX_DGNSS_NODE_LOCAL
+    void ubx_nav_svin_pub(
+        ubx_queue_frame_t *f,
+        std::shared_ptr<ubx::nav::svin::NavSVINPayload> payload)
+    {
+      RCLCPP_INFO(
+          get_logger(), "ubx class: 0x%02x id: 0x%02x nav velned polled payload - %s",
+          f->ubx_frame->msg_class, f->ubx_frame->msg_id,
+          payload->to_string().c_str());
+
+      auto msg = std::make_unique<ublox_ubx_msgs::msg::UBXNavSVIN>();
+      msg->header.frame_id = frame_id_;
+      msg->header.stamp = f->ts;
+      msg->version = payload->version;
+      msg->i_tow = payload->iTOW;
+      msg->dur = payload->dur;
+      msg->mean_x = payload->meanX;
+      msg->mean_y = payload->meanY;
+      msg->mean_z = payload->meanZ;
+      msg->mean_x_hp = payload->meanXHP;
+      msg->mean_y_hp = payload->meanYHP;
+      msg->mean_z_hp = payload->meanZHP;
+      msg->mean_acc = payload->meanAcc;
+      msg->obs = payload->obs;
+      msg->valid = payload->valid;
+      msg->active = payload->active;
+      // msg->itow = payload->iTOW;
+      // msg->vel_n = payload->velN;
+      // msg->vel_e = payload->velE;
+      // msg->vel_d = payload->velD;
+      // msg->speed = payload->speed;
+      // msg->g_speed = payload->gSpeed;
+      // msg->heading = payload->heading;
+      // msg->s_acc = payload->sAcc;
+      // msg->c_acc = payload->cAcc;
+
+      ubx_nav_svin_pub_->publish(*msg);
     }
 
     UBLOX_DGNSS_NODE_LOCAL

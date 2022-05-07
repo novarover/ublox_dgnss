@@ -35,6 +35,7 @@
 #include "ublox_dgnss_node/ubx/nav/ubx_nav_relposned.hpp"
 #include "ublox_dgnss_node/ubx/nav/ubx_nav_timeutc.hpp"
 #include "ublox_dgnss_node/ubx/nav/ubx_nav_velecef.hpp"
+#include "ublox_dgnss_node/ubx/nav/ubx_nav_svin.hpp"
 #include "ublox_dgnss_node/ubx/nav/ubx_nav_velned.hpp"
 
 namespace ubx::nav
@@ -45,19 +46,18 @@ typedef UBXFrameComms<nav::cov::NavCovPayload, usb::Connection> UbxNavCovFrameCo
 typedef UBXFrameComms<nav::dop::NavDOPPayload, usb::Connection> UbxNavDOPFrameComms;
 typedef UBXFrameComms<nav::eoe::NavEOEPayload, usb::Connection> UbxNavEOEFrameComms;
 typedef UBXFrameComms<nav::posecef::NavPosECEFPayload, usb::Connection> UbxNavPosECEFFrameComms;
-typedef UBXFrameComms<nav::hpposecef::NavHPPosECEFPayload,
-    usb::Connection> UbxNavHPPosECEFFrameComms;
+typedef UBXFrameComms<nav::hpposecef::NavHPPosECEFPayload,usb::Connection> UbxNavHPPosECEFFrameComms;
 typedef UBXFrameComms<nav::posllh::NavPosLLHPayload, usb::Connection> UbxNavPosLLHFrameComms;
 typedef UBXFrameComms<nav::hpposllh::NavHPPosLLHPayload, usb::Connection> UbxNavHPPosLLHFrameComms;
 typedef UBXFrameComms<nav::odo::NavOdoPayload, usb::Connection> UbxNavOdoFrameComms;
 typedef UBXFrameComms<nav::resetodo::NavResetOdoPayload, usb::Connection> UbxNavResetOdoFrameComms;
 typedef UBXFrameComms<nav::pvt::NavPvtPayload, usb::Connection> UbxNavPvtFrameComms;
 typedef UBXFrameComms<nav::status::NavStatusPayload, usb::Connection> UbxNavStatusFrameComms;
-typedef UBXFrameComms<nav::relposned::NavRelPosNedPayload,
-    usb::Connection> UbxNavRelPosNedFrameComms;
+typedef UBXFrameComms<nav::relposned::NavRelPosNedPayload,usb::Connection> UbxNavRelPosNedFrameComms;
 typedef UBXFrameComms<nav::timeutc::NavTimeUTCPayload, usb::Connection> UbxNavTimeUTCFrameComms;
 typedef UBXFrameComms<nav::velecef::NavVelECEFPayload, usb::Connection> UbxNavVelECEFFrameComms;
 typedef UBXFrameComms<nav::velned::NavVelNEDPayload, usb::Connection> UbxNavVelNEDFrameComms;
+typedef UBXFrameComms<nav::svin::NavSVINPayload, usb::Connection> UbxNavSVINFrameComms;
 
 class UbxNav
 {
@@ -80,6 +80,7 @@ private:
   std::shared_ptr<UbxNavTimeUTCFrameComms> timeutc_;
   std::shared_ptr<UbxNavVelECEFFrameComms> velecef_;
   std::shared_ptr<UbxNavVelNEDFrameComms> velned_;
+  std::shared_ptr<UbxNavSVINFrameComms> svin_;
 
 public:
   explicit UbxNav(std::shared_ptr<usb::Connection> usbc)
@@ -101,6 +102,7 @@ public:
     timeutc_ = std::make_shared<UbxNavTimeUTCFrameComms>(usbc_);
     velecef_ = std::make_shared<UbxNavVelECEFFrameComms>(usbc_);
     velned_ = std::make_shared<UbxNavVelNEDFrameComms>(usbc_);
+    svin_ = std::make_shared<UbxNavSVINFrameComms>(usbc_);
   }
 
   std::shared_ptr<UbxNavClockFrameComms> clock()
@@ -167,6 +169,12 @@ public:
   {
     return velned_;
   }
+  std::shared_ptr<UbxNavSVINFrameComms> svin()
+  {
+    return svin_;
+  }
+
+
   void frame(std::shared_ptr<ubx::Frame> frame)
   {
     switch (frame->msg_id) {
@@ -217,6 +225,9 @@ public:
         break;
       case ubx::UBX_NAV_VELNED:
         velned_->frame(frame);
+        break;
+      case ubx::UBX_NAV_SVIN:
+        svin_->frame(frame);
         break;
       default:
         // break;

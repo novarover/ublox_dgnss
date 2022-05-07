@@ -54,6 +54,7 @@ const msg_id_t UBX_NAV_RESETODO = 0x10;
 const msg_id_t UBX_NAV_TIMEUTC = 0x21;
 const msg_id_t UBX_NAV_VELECEF = 0x11;
 const msg_id_t UBX_NAV_VELNED = 0x12;
+const msg_id_t UBX_NAV_SVIN = 0x3b;
 const msg_id_t UBX_NAV_RELPOSNED = 0x3c;
 
 const msg_class_t UBX_RXM = 0x02;
