@@ -1708,16 +1708,16 @@ namespace ublox_dgnss
       for(i=0;i<msg->num_sigs;i++)
       {
         // Make a new NavSignal message 
-        msg->signals[i]->gnss_id = payload_->gnssId[i];
-        msg->signals[i]->svId = payload_->svId[i];
-        msg->signals[i]->sigId = payload_->sigId[i];
-        msg->signals[i]->freqId  = payload_->freqId[i];
-        msg->signals[i]->prRes = payload_->prRes[i];
-        msg->signals[i]->cno = payload_->cno[i];
-        msg->signals[i]->qualityInd = payload_->qualityInd[i];
-        msg->signals[i]->corrSource = payload_->corrSource[i];
-        msg->signals[i]->ionoModel = payload_->ionoModel[i];
-        msg->signals[i]->sigFlags = payload_->sigFlags[i];
+        msg->signals[i].gnss_id = payload->gnssId[i];
+        msg->signals[i].sv_id = payload_->svId[i];
+        msg->signals[i].sig_id = payload_->sigId[i];
+        msg->signals[i].freq_id  = payload_->freqId[i];
+        msg->signals[i].pr_res = payload_->prRes[i];
+        msg->signals[i].cno = payload_->cno[i];
+        msg->signals[i].quality_ind = payload_->qualityInd[i];
+        msg->signals[i].corr_source = payload_->corrSource[i];
+        msg->signals[i].iono_model = payload_->ionoModel[i];
+        msg->signals[i].sigFlags = payload_->sigFlags[i];
       }
 
       ubx_nav_sig_pub_->publish(*msg);
