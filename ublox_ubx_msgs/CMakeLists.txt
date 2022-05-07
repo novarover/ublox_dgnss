@@ -55,6 +55,8 @@ rosidl_generate_interfaces(ublox_ubx_msgs
   "msg/UBXNavTimeUTC.msg"
   "msg/UBXNavVelECEF.msg"
   "msg/UBXNavVelNED.msg"
+  "msg/NavSignal.msg"
+  "msg/UBXNavSIG.msg"
   "msg/UtcStd.msg"
   DEPENDENCIES builtin_interfaces std_msgs
 )

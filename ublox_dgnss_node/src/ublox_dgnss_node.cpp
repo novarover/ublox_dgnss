@@ -48,6 +48,8 @@
 #include "ublox_ubx_msgs/msg/ubx_nav_vel_ecef.hpp"
 #include "ublox_ubx_msgs/msg/ubx_nav_vel_ned.hpp"
 #include "ublox_ubx_msgs/msg/ubx_nav_svin.hpp"
+#include "ublox_ubx_msgs/msg/nav_signal.hpp"
+#include "ublox_ubx_msgs/msg/ubx_nav_sig.hpp"
 #include "ublox_ubx_msgs/msg/ubx_rxm_rtcm.hpp"
 #include "ublox_ubx_msgs/msg/rtcm3.hpp"
 #include "ublox_ubx_interfaces/srv/hot_start.hpp"
@@ -184,6 +186,8 @@ namespace ublox_dgnss
 
       ubx_nav_svin_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXNavSVIN>(
           node_name + "/ubx_nav_svin", qos);
+      ubx_nav_sig_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXNavSIG>(
+          node_name + "/ubx_nav_sig", qos);
 
       ubx_rxm_rtcm_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>(node_name + "/ubx_rxm_rtcm", qos);
       rtcm_out_pub_ = this->create_publisher<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_out", qos);
@@ -358,6 +362,7 @@ namespace ublox_dgnss
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavVelECEF>::SharedPtr ubx_nav_vel_ecef_pub_;
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavVelNED>::SharedPtr ubx_nav_vel_ned_pub_;
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavSVIN>::SharedPtr ubx_nav_svin_pub_;
+    rclcpp::Publisher<ublox_ubx_msgs::msg::UBXNavSIG>::SharedPtr ubx_nav_sig_pub_;
     
     // UBX-RXM types
     rclcpp::Publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>::SharedPtr ubx_rxm_rtcm_pub_;
@@ -1583,6 +1588,9 @@ namespace ublox_dgnss
       case ubx::UBX_NAV_SVIN:
         ubx_nav_svin_pub(f, ubx_nav_->svin()->payload());
         break;
+      case ubx::UBX_NAV_SIG:
+        ubx_nav_sig_pub(f, ubx_nav_->sig()->payload());
+        break;
       default:
         RCLCPP_WARN(
             get_logger(), "ubx class: 0x%02x id: 0x%02x unknown ... doing nothing",
@@ -1676,6 +1684,43 @@ namespace ublox_dgnss
       // msg->c_acc = payload->cAcc;
 
       ubx_nav_svin_pub_->publish(*msg);
+    }
+
+    UBLOX_DGNSS_NODE_LOCAL
+    void ubx_nav_sig_pub(
+        ubx_queue_frame_t *f,
+        std::shared_ptr<ubx::nav::sig::NavSIGPayload> payload)
+    {
+      RCLCPP_INFO(
+          get_logger(), "ubx class: 0x%02x id: 0x%02x nav sig polled payload - %s",
+          f->ubx_frame->msg_class, f->ubx_frame->msg_id,
+          payload->to_string().c_str());
+
+      auto msg = std::make_unique<ublox_ubx_msgs::msg::UBXNavSIG>();
+      msg->header.frame_id = frame_id_;
+      msg->header.stamp = f->ts;
+      msg->i_tow = payload->iTOW;
+      msg->version = payload->version;
+      msg->num_sigs = payload->numSigs;
+      msg->signals.resize(payload->numSigs);
+
+      int i;
+      for(i=0;i<msg->num_sigs;i++)
+      {
+        // Make a new NavSignal message 
+        msg->signals[i]->gnss_id = payload_->gnssId[i];
+        msg->signals[i]->svId = payload_->svId[i];
+        msg->signals[i]->sigId = payload_->sigId[i];
+        msg->signals[i]->freqId  = payload_->freqId[i];
+        msg->signals[i]->prRes = payload_->prRes[i];
+        msg->signals[i]->cno = payload_->cno[i];
+        msg->signals[i]->qualityInd = payload_->qualityInd[i];
+        msg->signals[i]->corrSource = payload_->corrSource[i];
+        msg->signals[i]->ionoModel = payload_->ionoModel[i];
+        msg->signals[i]->sigFlags = payload_->sigFlags[i];
+      }
+
+      ubx_nav_sig_pub_->publish(*msg);
     }
 
     UBLOX_DGNSS_NODE_LOCAL
