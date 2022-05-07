@@ -1580,6 +1580,9 @@ namespace ublox_dgnss
       case ubx::UBX_NAV_VELNED:
         ubx_nav_vel_ned_pub(f, ubx_nav_->velned()->payload());
         break;
+      case ubx::UBX_NAV_SVIN:
+        ubx_nav_svin_pub(f, ubx_nav_->svin()->payload());
+        break;
       default:
         RCLCPP_WARN(
             get_logger(), "ubx class: 0x%02x id: 0x%02x unknown ... doing nothing",
@@ -1642,7 +1645,7 @@ namespace ublox_dgnss
         std::shared_ptr<ubx::nav::svin::NavSVINPayload> payload)
     {
       RCLCPP_INFO(
-          get_logger(), "ubx class: 0x%02x id: 0x%02x nav velned polled payload - %s",
+          get_logger(), "ubx class: 0x%02x id: 0x%02x nav svin polled payload - %s",
           f->ubx_frame->msg_class, f->ubx_frame->msg_id,
           payload->to_string().c_str());
 
