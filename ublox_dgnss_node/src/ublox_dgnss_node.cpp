@@ -56,7 +56,9 @@
 #include "ublox_ubx_interfaces/srv/warm_start.hpp"
 #include "ublox_ubx_interfaces/srv/cold_start.hpp"
 #include "ublox_ubx_interfaces/srv/reset_odo.hpp"
-#include "sensor_msgs/msg/nav_sat_fix.hpp"
+// #include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/pose_with_covariance.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -156,6 +158,7 @@ namespace ublox_dgnss
       }
 
       auto qos = rclcpp::SensorDataQoS();
+
       frame_id_ = "ubx";
       std::string node_name(this->get_name());
       ubx_nav_clock_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXNavClock>(
@@ -194,7 +197,10 @@ namespace ublox_dgnss
       rtcm_out_pub_ = this->create_publisher<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_out", qos);
       rtcm_in_sub_ = this->create_subscription<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_in", qos, std::bind(&UbloxDGNSSNode::rtcm_in_callback, this, _1));
 
-      nav_sat_fix_pub_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(node_name + "/fix", qos);
+      // Initialise the global PoseWithCovariance message
+      // pose_cov_message_ = std::make_unique<geometry_msgs::msg::PoseWithCovariance>();
+
+      pose_cov_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovariance>(node_name + "/pose_cov", qos);
 
       // ros2 parameter call backs
       parameters_callback_handle_ =
@@ -256,6 +262,9 @@ namespace ublox_dgnss
 
       rtcm_queue_.clear();
       rtcm_timer_ = create_wall_timer(10ns, std::bind(&UbloxDGNSSNode::rtcm_timer_callback, this));
+
+      // Setup the pose publish timer
+      pos_cov_timer_ = create_wall_timer(1000ms, std::bind(&UbloxDGNSSNode::pose_timer_callback, this));
 
 
       ubx_cfg_ = std::make_shared<ubx::cfg::UbxCfg>(usbc_);
@@ -325,6 +334,7 @@ namespace ublox_dgnss
     std::shared_ptr<ubx::inf::UbxInf> ubx_inf_;
     std::shared_ptr<ubx::nav::UbxNav> ubx_nav_;
     std::shared_ptr<ubx::rxm::UbxRxm> ubx_rxm_;
+    
 
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameters_callback_handle_;
     // specific to libusb to to process events asynchronously
@@ -339,9 +349,13 @@ namespace ublox_dgnss
     std::deque<rtcm_3_frame_t> rtcm_queue_;
     std::mutex rtcm_queue_mutex_;
 
+    // The latest PoseWithCovariance message, which is updated in the NAV_PVT and NAV_COV callbacks,
+    // and published on a separate timer.
+    geometry_msgs::msg::PoseWithCovariance pose_cov_message_; 
 
     rclcpp::TimerBase::SharedPtr ubx_timer_;
     rclcpp::TimerBase::SharedPtr rtcm_timer_;
+    rclcpp::TimerBase::SharedPtr pos_cov_timer_;
 
     bool async_initialised_;
 
@@ -374,8 +388,8 @@ namespace ublox_dgnss
     rclcpp::Publisher<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_out_pub_;
     rclcpp::Subscription<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_in_sub_;
 
-    // NavSatFix output
-    rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr nav_sat_fix_pub_;
+    // ROS-friendly Pose output
+    rclcpp::Publisher<geometry_msgs::msg::PoseWithCovariance>::SharedPtr pose_cov_pub_;
 
     rclcpp::Service<ublox_ubx_interfaces::srv::HotStart>::SharedPtr hot_start_service_;
     rclcpp::Service<ublox_ubx_interfaces::srv::WarmStart>::SharedPtr warm_start_service_;
@@ -1028,6 +1042,15 @@ namespace ublox_dgnss
     // }
 
   private:
+
+    UBLOX_DGNSS_NODE_LOCAL
+    void pose_timer_callback()
+    {
+      // Publishes the latest PoseWithCovariance message
+      // The pose and covariance parts of this messsage are handles in the nav_pvt_pub and nav_cov_pub callbacks
+      pose_cov_pub_->publish(pose_cov_message_);
+    }
+
     UBLOX_DGNSS_NODE_LOCAL
     void rtcm_timer_callback()
     {
@@ -1872,6 +1895,11 @@ namespace ublox_dgnss
       msg->mag_acc = payload->magAcc;
 
       ubx_nav_pvt_pub_->publish(*msg);
+
+      // Update the global pose_cov_message_
+      pose_cov_message_.pose.position.x = msg->lat;
+      pose_cov_message_.pose.position.y = msg->lon;
+      pose_cov_message_.pose.position.z = msg->height;
     }
 
     UBLOX_DGNSS_NODE_LOCAL
@@ -2104,6 +2132,7 @@ namespace ublox_dgnss
       msg->pos_cov_ee = payload->posCovEE;
       msg->pos_cov_ed = payload->posCovED;
       msg->pos_cov_dd = payload->posCovDD;
+
       msg->vel_cov_nn = payload->velCovNN;
       msg->vel_cov_ne = payload->velCovNE;
       msg->vel_cov_nd = payload->velCovND;
@@ -2112,6 +2141,24 @@ namespace ublox_dgnss
       msg->vel_cov_dd = payload->velCovDD;
 
       ubx_nav_cov_pub_->publish(*msg);
+
+      // Update the global pose_cov_message_
+      // nn ne nd rotX rotY roxZ
+      // en ee ed .... .... .... 
+      // dn de dd .... .... ....
+      // .. .. .. .... .... ....
+      // .. .. .. .... .... ....
+      // .. .. .. .... .... ....
+
+      pose_cov_message_.covariance[0] = msg->pos_cov_nn;
+      pose_cov_message_.covariance[1] = msg->pos_cov_ne;
+      pose_cov_message_.covariance[2] = msg->pos_cov_nd;
+      pose_cov_message_.covariance[6] = msg->pos_cov_ne;
+      pose_cov_message_.covariance[7] = msg->pos_cov_ee;
+      pose_cov_message_.covariance[8] = msg->pos_cov_ed;
+      pose_cov_message_.covariance[12] = msg->pos_cov_nd;
+      pose_cov_message_.covariance[13] = msg->pos_cov_ed;
+      pose_cov_message_.covariance[14] = msg->pos_cov_dd;
     }
 
     UBLOX_DGNSS_NODE_LOCAL
