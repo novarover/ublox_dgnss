@@ -1175,7 +1175,12 @@ namespace ublox_dgnss
             get_logger(), "ubx class: 0x%02x id: 0x%02x in checksum failed! Frame ignored ...",
             f->ubx_frame->msg_class,
             f->ubx_frame->msg_id);
-        return;
+        if (f->ubx_frame->msg_class == ubx::UBX_NAV && f->ubx_frame->msg_id == ubx::UBX_NAV_SIG)
+        {
+          RCLCPP_WARN(get_logger(),"PASSING CHECKSUM FOR NAV-SIG");
+        }else{
+          return;
+        }
       }
 
       switch (f->ubx_frame->msg_class)

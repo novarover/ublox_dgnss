@@ -242,7 +242,8 @@ const ubx_cfg_item_t CFG_MSGOUT_UBX_NAV_VELECEF_USB =
 {"CFG_MSGOUT_UBX_NAV_VELECEF_USB", 0x20910040, U1, 0, NA};
 const ubx_cfg_item_t CFG_MSGOUT_UBX_NAV_VELNED_USB =
 {"CFG_MSGOUT_UBX_NAV_VELNED_USB", 0x20910045, U1, 0, NA};
-
+const ubx_cfg_item_t CFG_MSGOUT_UBX_NAV_SIG_USB =
+{"CFG_MSGOUT_UBX_NAV_SIG_USB", 0x20910348, U1, 0, NA};
 
 std::map<ubx_key_id_t, ubx_cfg_item_t> ubxKeyCfgItemMap = {
   {CFG_INFMSG_UBX_USB.ubx_key_id, CFG_INFMSG_UBX_USB},
@@ -296,6 +297,7 @@ std::map<ubx_key_id_t, ubx_cfg_item_t> ubxKeyCfgItemMap = {
   {CFG_MSGOUT_UBX_NAV_TIMEUTC_USB.ubx_key_id, CFG_MSGOUT_UBX_NAV_TIMEUTC_USB},
   {CFG_MSGOUT_UBX_NAV_VELECEF_USB.ubx_key_id, CFG_MSGOUT_UBX_NAV_VELECEF_USB},
   {CFG_MSGOUT_UBX_NAV_VELNED_USB.ubx_key_id, CFG_MSGOUT_UBX_NAV_VELNED_USB},
+  {CFG_MSGOUT_UBX_NAV_SIG_USB.ubx_key_id, CFG_MSGOUT_UBX_NAV_SIG_USB},
 };
 
 bool operator<(const ubx_key_id_t & fk1, const ubx_key_id_t & fk2) {return fk1.all < fk2.all;}
