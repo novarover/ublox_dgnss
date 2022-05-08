@@ -132,6 +132,13 @@ enum CFG_TMODE_MODE_ENUM {DISABLED = 0, SURVEY_IN = 1, FIXED = 2};
 const ubx_cfg_item_t CFG_TMODE_POS_TYPE = {"CFG_TMODE_POS_TYPE", 0x20030002, E1, 1, NA};
 enum CFG_TMODE_POS_TYPE_ENUM {ECEF = 0, LLH = 1};
 
+const ubx_cfg_item_t CFG_TMODE_LAT = {"CFG_TMODE_LAT", 0x40030009, I4, 1, NA};
+const ubx_cfg_item_t CFG_TMODE_LON = {"CFG_TMODE_LON", 0x4003000a, I4, 1, NA};
+const ubx_cfg_item_t CFG_TMODE_HEIGHT = {"CFG_TMODE_HEIGHT", 0x4003000b, I4, 1, NA};
+const ubx_cfg_item_t CFG_TMODE_LAT_HP = {"CFG_TMODE_LAT_HP", 0x2003000c, I1, 1, NA};
+const ubx_cfg_item_t CFG_TMODE_LON_HP = {"CFG_TMODE_LON_HP", 0x2003000d, I1, 1, NA};
+const ubx_cfg_item_t CFG_TMODE_HEIGHT_HP = {"CFG_TMODE_HEIGHT_HP", 0x2003000e, I1, 1, NA};
+
 // cfg navhpg - high precision navigation configuration
 const ubx_cfg_item_t CFG_NAVHPG_DGNSSMODE = {"CFG_NAVHPG_DGNSSMODE", 0x20140011, E1, 1, NA};
 enum CFG_NAVHPG_DGNSSMODE_ENUM
@@ -262,6 +269,12 @@ std::map<ubx_key_id_t, ubx_cfg_item_t> ubxKeyCfgItemMap = {
   {CFG_USBOUTPROT_RTCM3X.ubx_key_id, CFG_USBOUTPROT_RTCM3X},
   {CFG_TMODE_MODE.ubx_key_id, CFG_TMODE_MODE},
   {CFG_TMODE_POS_TYPE.ubx_key_id, CFG_TMODE_POS_TYPE},
+  {CFG_TMODE_LAT.ubx_key_id, CFG_TMODE_LAT},
+  {CFG_TMODE_LON.ubx_key_id, CFG_TMODE_LON},
+  {CFG_TMODE_HEIGHT.ubx_key_id, CFG_TMODE_HEIGHT},
+  {CFG_TMODE_LAT_HP.ubx_key_id, CFG_TMODE_LAT_HP},
+  {CFG_TMODE_LON_HP.ubx_key_id, CFG_TMODE_LON_HP},
+  {CFG_TMODE_HEIGHT_HP.ubx_key_id, CFG_TMODE_HEIGHT_HP},
   {CFG_NAVHPG_DGNSSMODE.ubx_key_id, CFG_NAVHPG_DGNSSMODE},
   {CFG_NAVSPG_FIXMODE.ubx_key_id, CFG_NAVSPG_FIXMODE},
   {CFG_NAVSPG_INIFIX3D.ubx_key_id, CFG_NAVSPG_INIFIX3D},
