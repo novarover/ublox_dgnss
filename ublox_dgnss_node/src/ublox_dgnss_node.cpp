@@ -56,6 +56,7 @@
 #include "ublox_ubx_interfaces/srv/warm_start.hpp"
 #include "ublox_ubx_interfaces/srv/cold_start.hpp"
 #include "ublox_ubx_interfaces/srv/reset_odo.hpp"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -192,6 +193,8 @@ namespace ublox_dgnss
       ubx_rxm_rtcm_pub_ = this->create_publisher<ublox_ubx_msgs::msg::UBXRxmRTCM>(node_name + "/ubx_rxm_rtcm", qos);
       rtcm_out_pub_ = this->create_publisher<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_out", qos);
       rtcm_in_sub_ = this->create_subscription<ublox_ubx_msgs::msg::RTCM3>(node_name + "/rtcm3_in", qos, std::bind(&UbloxDGNSSNode::rtcm_in_callback, this, _1));
+
+      nav_sat_fix_pub_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(node_name + "/fix", qos);
 
       // ros2 parameter call backs
       parameters_callback_handle_ =
@@ -370,6 +373,9 @@ namespace ublox_dgnss
     // RAW RTCM3 TOPICS
     rclcpp::Publisher<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_out_pub_;
     rclcpp::Subscription<ublox_ubx_msgs::msg::RTCM3>::SharedPtr rtcm_in_sub_;
+
+    // NavSatFix output
+    rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr nav_sat_fix_pub_;
 
     rclcpp::Service<ublox_ubx_interfaces::srv::HotStart>::SharedPtr hot_start_service_;
     rclcpp::Service<ublox_ubx_interfaces::srv::WarmStart>::SharedPtr warm_start_service_;
