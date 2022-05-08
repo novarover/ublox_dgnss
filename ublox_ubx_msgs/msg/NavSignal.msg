@@ -37,7 +37,10 @@ uint8 corr_source
 uint8 iono_model
 
 uint8 flag_signal_health 
-uint8 flag_pr_smoothed
-uint8 flag_pr_used
-uint8 flag_cr_used
-uint8 flag_do_used
+bool flag_pr_smoothed
+bool flag_pr_used
+bool flag_cr_used
+bool flag_do_used
+bool flag_pr_corr_used
+bool flag_cr_corr_used
+bool flag_do_corr_used

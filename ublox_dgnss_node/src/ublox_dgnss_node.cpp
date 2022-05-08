@@ -1709,15 +1709,28 @@ namespace ublox_dgnss
       {
         // Make a new NavSignal message 
         msg->signals[i].gnss_id = payload->gnssId[i];
-        msg->signals[i].sv_id = payload_->svId[i];
-        msg->signals[i].sig_id = payload_->sigId[i];
-        msg->signals[i].freq_id  = payload_->freqId[i];
-        msg->signals[i].pr_res = payload_->prRes[i];
-        msg->signals[i].cno = payload_->cno[i];
-        msg->signals[i].quality_ind = payload_->qualityInd[i];
-        msg->signals[i].corr_source = payload_->corrSource[i];
-        msg->signals[i].iono_model = payload_->ionoModel[i];
-        msg->signals[i].sigFlags = payload_->sigFlags[i];
+        msg->signals[i].sv_id = payload->svId[i];
+        msg->signals[i].sig_id = payload->sigId[i];
+        msg->signals[i].freq_id  = payload->freqId[i];
+        msg->signals[i].pr_res = payload->prRes[i];
+        msg->signals[i].cno = payload->cno[i];
+        msg->signals[i].quality_ind = payload->qualityInd[i];
+        msg->signals[i].corr_source = payload->corrSource[i];
+        msg->signals[i].iono_model = payload->ionoModel[i];
+
+	// Extract the various signal flags
+	// This is little-endian, im unsure how this affects us 
+	ubx::x2_t flags = *(payload->sigFlags);
+
+	// Maps to HEALTH_* constants in NavSignal.msg
+	msg->signals[i].flag_signal_health = static_cast<uint8_t>(flags & 0b11);
+	msg->signals[i].flag_pr_smoothed = static_cast<bool>((flags >> 2) & 0b1);
+	msg->signals[i].flag_pr_used = static_cast<bool>((flags >> 3) & 0b1);
+	msg->signals[i].flag_cr_used = static_cast<bool>((flags >> 4) & 0b1);
+	msg->signals[i].flag_do_used = static_cast<bool>((flags >> 5) & 0b1);
+	msg->signals[i].flag_pr_corr_used = static_cast<bool>((flags >> 6) & 0b1);
+	msg->signals[i].flag_cr_corr_used = static_cast<bool>((flags >> 7) & 0b1);
+	msg->signals[i].flag_do_corr_used = static_cast<bool>((flags >> 8) & 0b1);
       }
 
       ubx_nav_sig_pub_->publish(*msg);
