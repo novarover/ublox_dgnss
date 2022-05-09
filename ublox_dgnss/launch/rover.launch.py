@@ -12,6 +12,11 @@ def generate_launch_description():
             {'CFG_MSGOUT_UBX_NAV_STATUS_USB': 5},
             {'CFG_MSGOUT_UBX_NAV_RELPOSNED_USB':1},
             {'CFG_RATE_MEAS':25},
+            {'CFG_NAVSPG_DYNMODEL': 4},
+            {'CFG_NAVHPG_DGNSSMODE':3},
+            {'CFG_NAVSPG_FIXMODE':3},
+            {'CFG_MSGOUT_UBX_NAV_SIG_USB': 1},
+            {'CFG_MSGOUT_UBX_NAV_COV_USB': 1},
             {'CFG_RATE_NAV':4}]
             # ANY CONFIG APPLIED ABOVE IS TEMPORARY. 
             # CONFIG STORED IN FLASH IS STILL USED BY UBLOX CHIP.
