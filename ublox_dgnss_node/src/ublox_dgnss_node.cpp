@@ -1194,14 +1194,14 @@ namespace ublox_dgnss
 
       if (!ubx_frame_checksum_check(f->ubx_frame))
       {
-        RCLCPP_WARN(
+        if (f->ubx_frame->msg_class == ubx::UBX_NAV && f->ubx_frame->msg_id == ubx::UBX_NAV_SIG)
+        {
+          RCLCPP_DEBUG(get_logger(),"PASSING CHECKSUM FOR NAV-SIG");
+        }else{
+          RCLCPP_WARN(
             get_logger(), "ubx class: 0x%02x id: 0x%02x in checksum failed! Frame ignored ...",
             f->ubx_frame->msg_class,
             f->ubx_frame->msg_id);
-        if (f->ubx_frame->msg_class == ubx::UBX_NAV && f->ubx_frame->msg_id == ubx::UBX_NAV_SIG)
-        {
-          RCLCPP_WARN(get_logger(),"PASSING CHECKSUM FOR NAV-SIG");
-        }else{
           return;
         }
       }
@@ -1897,9 +1897,9 @@ namespace ublox_dgnss
       ubx_nav_pvt_pub_->publish(*msg);
 
       // Update the global pose_cov_message_
-      pose_cov_message_.pose.position.x = msg->lat;
-      pose_cov_message_.pose.position.y = msg->lon;
-      pose_cov_message_.pose.position.z = msg->height;
+      pose_cov_message_.pose.position.x = msg->lat * 1e-7;
+      pose_cov_message_.pose.position.y = msg->lon * 1e-7;
+      pose_cov_message_.pose.position.z = msg->height * 1e-3;
     }
 
     UBLOX_DGNSS_NODE_LOCAL
