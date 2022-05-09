@@ -56,7 +56,7 @@
 #include "ublox_ubx_interfaces/srv/warm_start.hpp"
 #include "ublox_ubx_interfaces/srv/cold_start.hpp"
 #include "ublox_ubx_interfaces/srv/reset_odo.hpp"
-// #include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/pose_with_covariance.hpp"
 
@@ -200,6 +200,7 @@ namespace ublox_dgnss
       // Initialise the global PoseWithCovariance message
       // pose_cov_message_ = std::make_unique<geometry_msgs::msg::PoseWithCovariance>();
 
+      nav_sat_fix_pub_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(node_name + "/fix", qos);
       pose_cov_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovariance>(node_name + "/pose_cov", qos);
 
       // ros2 parameter call backs
@@ -390,6 +391,7 @@ namespace ublox_dgnss
 
     // ROS-friendly Pose output
     rclcpp::Publisher<geometry_msgs::msg::PoseWithCovariance>::SharedPtr pose_cov_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr nav_sat_fix_pub_;
 
     rclcpp::Service<ublox_ubx_interfaces::srv::HotStart>::SharedPtr hot_start_service_;
     rclcpp::Service<ublox_ubx_interfaces::srv::WarmStart>::SharedPtr warm_start_service_;
@@ -1049,6 +1051,29 @@ namespace ublox_dgnss
       // Publishes the latest PoseWithCovariance message
       // The pose and covariance parts of this messsage are handles in the nav_pvt_pub and nav_cov_pub callbacks
       pose_cov_pub_->publish(pose_cov_message_);
+      // Create a NavSatFix message and publish it too
+      auto msg = std::make_unique<sensor_msgs::msg::NavSatFix>();
+      rclcpp::Time ts = rclcpp::Clock().now();
+      msg->header.frame_id = frame_id_;
+      msg->header.stamp = ts;
+
+      msg->latitude = pose_cov_message_.pose.position.x;
+      msg->longitude = pose_cov_message_.pose.position.y;
+      msg->altitude = pose_cov_message_.pose.position.z;
+
+      msg->position_covariance[0] = pose_cov_message_.covariance[0];
+      msg->position_covariance[1] = pose_cov_message_.covariance[1];
+      msg->position_covariance[2] = pose_cov_message_.covariance[2];
+      msg->position_covariance[3] = pose_cov_message_.covariance[6];
+      msg->position_covariance[4] = pose_cov_message_.covariance[7];
+      msg->position_covariance[5] = pose_cov_message_.covariance[8];
+      msg->position_covariance[6] = pose_cov_message_.covariance[12];
+      msg->position_covariance[7] = pose_cov_message_.covariance[13];
+      msg->position_covariance[8] = pose_cov_message_.covariance[14];
+
+      msg->position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_KNOWN;
+
+      nav_sat_fix_pub_->publish(*msg);
     }
 
     UBLOX_DGNSS_NODE_LOCAL
