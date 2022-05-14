@@ -8,16 +8,16 @@ from launch_ros.descriptions import ComposableNode
 def generate_launch_description():
   """Generate launch description for ublox_dgnss components."""
   params = [{'CFG_USBOUTPROT_NMEA': False},
-            {'CFG_MSGOUT_UBX_NAV_HPPOSLLH_USB': 1},
-            {'CFG_MSGOUT_UBX_NAV_PVT_USB': 10},
-            {'CFG_MSGOUT_UBX_NAV_STATUS_USB': 5},
-            {'CFG_MSGOUT_UBX_NAV_RELPOSNED_USB':10},
-            {'CFG_RATE_MEAS':25},
+            {'CFG_MSGOUT_UBX_NAV_HPPOSLLH_USB': 0},
+            {'CFG_MSGOUT_UBX_NAV_PVT_USB': 1},
+            {'CFG_MSGOUT_UBX_NAV_STATUS_USB': 2},
+            {'CFG_MSGOUT_UBX_NAV_RELPOSNED_USB':0},
             {'CFG_NAVHPG_DGNSSMODE':3},
             {'CFG_NAVSPG_FIXMODE':3},
-            {'CFG_MSGOUT_UBX_NAV_SIG_USB': 1},
-            {'CFG_MSGOUT_UBX_NAV_COV_USB': 10},
-            {'CFG_RATE_NAV':4}]
+            {'CFG_MSGOUT_UBX_NAV_SIG_USB': 5},
+            {'CFG_MSGOUT_UBX_NAV_COV_USB': 1},
+            {'CFG_RATE_MEAS':25},
+            {'CFG_RATE_NAV':1}]
             # ANY CONFIG APPLIED ABOVE IS TEMPORARY. 
             # CONFIG STORED IN FLASH IS STILL USED BY UBLOX CHIP.
             #{'CFG_RATE_MEAS': 100},

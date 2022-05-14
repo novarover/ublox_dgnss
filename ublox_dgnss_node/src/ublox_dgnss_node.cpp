@@ -265,7 +265,7 @@ namespace ublox_dgnss
       rtcm_timer_ = create_wall_timer(10ns, std::bind(&UbloxDGNSSNode::rtcm_timer_callback, this));
 
       // Setup the pose publish timer
-      pos_cov_timer_ = create_wall_timer(1000ms, std::bind(&UbloxDGNSSNode::pose_timer_callback, this));
+      pos_cov_timer_ = create_wall_timer(100ms, std::bind(&UbloxDGNSSNode::pose_timer_callback, this));
 
 
       ubx_cfg_ = std::make_shared<ubx::cfg::UbxCfg>(usbc_);
